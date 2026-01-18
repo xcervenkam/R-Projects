@@ -1,0 +1,501 @@
+---
+title: "Projekt M7986"
+author: "Dráždilová, Červenka, Farkašovský"
+date: "2025-12-17"
+lang: cs
+format:
+  html:
+    code-tools: true
+    theme: journal
+    toc: true
+    toc-depth: 3
+    toc-title: "Obsah"
+    code-fold: true
+    link-external-newwindow: true
+    number-tables: true
+embed-resources: true
+fig-cap: true
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+
+# Směs dvourozměrných normálních rozdělení
+
+Směs dvourozměrných normálních rozdělení je definovaná následovně
+
+$$
+pN_2(\boldsymbol{\mu}_1, \boldsymbol{\Sigma}_1^2) + (1-p)N_2(\boldsymbol{\mu}_2, \boldsymbol{\Sigma}_2^2),
+$$
+
+kde
+
+$$
+\boldsymbol{\theta} =
+(p, \mu_{11}, \mu_{12}, \sigma_{11}^2, \sigma_{12}^2, \rho_1,
+   \mu_{21}, \mu_{22}, \sigma_{21}^2, \sigma_{22}^2, \rho_2)^T.
+$$
+
+$N_2(\boldsymbol{\mu}_i, \boldsymbol{\Sigma}_i)$, kde $i = 1, 2$, značí dvourozměrné normální rozdělení 
+s parametry $\boldsymbol{\theta} = (\boldsymbol{\mu}, \boldsymbol{\Sigma})$, kde
+
+$$
+\boldsymbol{\mu} = (\mu_1, \mu_2)^T, 
+\qquad
+\boldsymbol{\Sigma} =
+\begin{pmatrix}
+\sigma_1^2 & \rho\,\sigma_1\sigma_2 \\
+\rho\,\sigma_1\sigma_2 & \sigma_2^2
+\end{pmatrix},
+$$
+
+a kde $\boldsymbol{\theta} = (\mu_1, \mu_2, \sigma_1^2, \sigma_2^2, \rho)^T$,  $(x, y)^T \in \mathbb{R}^2$, $\mu_j \in \mathbb{R}$, $\sigma_j^2 > 0$, $j = 1, 2$, $\rho \in (-1, 1)$.
+
+Hustota je dána předpisem
+
+$$
+f(x, y)
+  = \frac{1}{A}
+     \exp\!\left\{
+        -\frac{1}{B}
+        \left[
+           \frac{(x-\mu_1)^2}{\sigma_1^2}
+           - 2\rho\,\frac{(x-\mu_1)(y-\mu_2)}{\sigma_1\sigma_2}
+           + \frac{(y-\mu_2)^2}{\sigma_2^2}
+        \right]
+      \right\},
+$$
+
+kde
+
+$$
+A = 2\pi\,\sigma_1\sigma_2\sqrt{1-\rho^2},
+\qquad
+B = 2(1-\rho^2).
+$$
+
+## Načtení dat
+
+```{r, echo=FALSE}
+library(mclust)
+library(datasets)
+library(mvtnorm)
+library(colorspace)
+library(gifski)
+library(knitr)
+library(kableExtra)
+```
+
+## Kratký náhled na data
+
+```{r}
+data("faithful")
+head(faithful)
+```
+
+- **eruptions**: doba trvání erupce v minutách,
+- **waiting**: čas čekaní na erupci v minutách.
+
+## (a)  Nakreslite histogram pre dobu čakania na erupciu a superponujte ho krivkou jadrového odhadu hustoty získaného z dát. Podobný histogram vykreslite aj pre dobu trvania erupcie;
+
+
+```{r}
+#| label: fig-histograms
+#| fig-cap: "Histogramy doby čekaní na erupci a doby trvaní erupce s jadrovým odhadem hustoty."
+#| fig-width: 10
+#| fig-height: 4
+#| echo: true
+
+# Dva grafy vedle sebe
+par(mfrow = c(1, 2), mar = c(4,4,2,1))
+
+## 1) Histogram waiting
+hist(
+  faithful$waiting,
+  breaks = 20,
+  freq   = FALSE,
+  main   = "(a) Doba čekání na erupci",
+  xlab   = "čas čekání [min]",
+  ylab   = "hustota",
+  col    = rgb(0.4, 0.6, 0.9, 0.5),
+  border = rgb(0.3, 0.5, 0.8, 0.9)
+)
+lines(
+  density(faithful$waiting),
+  lwd = 2,
+  col = "navy"
+)
+
+## 2) Histogram eruptions
+hist(
+  faithful$eruptions,
+  breaks = 20,
+  freq   = FALSE,
+  main   = "(b) Doba trvání erupce",
+  xlab   = "doba erupce [min]",
+  ylab   = "hustota",
+  col    = rgb(0.9, 0.6, 0.4, 0.5),
+  border = rgb(0.8, 0.5, 0.3, 0.9)
+)
+lines(
+  density(faithful$eruptions),
+  lwd = 2,
+  col = "firebrick"
+)
+
+# Reset layout
+par(mfrow = c(1, 1))
+```
+
+
+
+## (b) Naprogramujte funkciu hustoty zmiešaného dvojrozmerného normálneho rozdelenia `Mixdnorm2()`;
+
+### Naprogramování funkce
+
+```{r}
+Mixdnorm2 <- function(x, y,
+                      p,
+                      mu1, Sigma1,
+                      mu2, Sigma2)
+{
+  # kontrola
+  if (p < 0 || p > 1) stop("p musí být v intervalu 0 až 1")
+  
+  # hustoty jednotlivých komponent
+  f1 <- mvtnorm::dmvnorm(cbind(x, y), mean = mu1, sigma = Sigma1)
+  f2 <- mvtnorm::dmvnorm(cbind(x, y), mean = mu2, sigma = Sigma2)
+  
+  # směs
+  p * f1 + (1 - p) * f2
+}
+```
+
+
+## (c) Pomocou funkcie `densityMclust()`, ktorej syntax samostatne naštudujte, odhadnite parametre zmiešaného dvojrozmerného normálneho rozdelenia. Získané odhady zaokrúhlite na štyri desatinné miesta a vložte do prehľadnej tabuľky. Všetky získané hodnoty riadne interpretujte.
+
+```{r, echo=TRUE}
+# parametr modelNames urcuje omezeni na kovariacni matici (tedy i na tvar komponent)
+fitted_model <- densityMclust(faithful, modelNames = "VVV", G = 2, plot=FALSE)
+
+means <- round(fitted_model$parameters$mean, 4)
+prop <- round(fitted_model$parameters$pro, 4)
+sigmas <- list()
+for (i in 1:fitted_model$G) {
+  sigmas[[i]] <- round(fitted_model$parameters$variance$sigma[,,i], 4)
+}
+# Odhadnute parametre z modelu
+p      <- round(fitted_model$parameters$pro, 4)
+mu1    <- round(fitted_model$parameters$mean[, 1], 4)
+mu2    <- round(fitted_model$parameters$mean[, 2], 4)
+Sigma1 <- round(fitted_model$parameters$variance$sigma[, , 1], 4)
+Sigma2 <- round(fitted_model$parameters$variance$sigma[, , 2], 4)
+```
+
+```{r}
+#| label: tbl-vahy
+#| tbl-cap: "Odhadnuté váhy komponent směsi dvou dvourozměrných normálních rozdělení"
+#| echo: false
+
+t1 <- data.frame(
+  Komponent  = c("\\(\\hat{p}\\)", "\\(1-\\hat{p}\\)"),
+  Odhad_vahy = p  # p už obsahuje p1 i p2
+)
+
+kable(
+  t1,
+  digits    = 4,
+  escape    = FALSE,                        # aby se \(\) neescapovalo
+  col.names = c("Komponent", "Odhad váhy")
+) |>
+  kable_styling(
+    full_width        = FALSE,
+    position          = "center",
+    bootstrap_options = "condensed",
+    font_size         = 11
+  ) |>
+  column_spec(1, width = "4em") |>
+  column_spec(2, width = "5em")
+```
+
+@tbl-vahy zobrazuje odhad váhy první a druhé složky smíšeného modelu, tedy odhad pravděpodobnosti, že náhodné pozorování patří do první komponenty.
+
+```{r}
+#| label: tbl-means
+#| tbl-cap: "Odhadnuté střední hodnoty komponent"
+#| echo: false
+
+t_mu <- data.frame(
+  mu_vec = c("\\(\\boldsymbol{\\hat{\\mu}_1}\\)", "\\(\\boldsymbol{\\hat{\\mu}_2}\\)"),
+  mu1    = c(mu1[1], mu2[1]),
+  mu2    = c(mu1[2], mu2[2])
+)
+
+kable(
+  t_mu,
+  digits    = 4,
+  escape    = FALSE,
+  col.names = c("", "\\(\\hat{\\mu}_{i1}\\)", "\\(\\hat{\\mu}_{i2}\\)")
+) |>
+  kable_styling(
+    full_width        = FALSE,
+    position          = "center",
+    bootstrap_options = "condensed",
+    font_size         = 10
+  ) 
+```
+
+@tbl-means zobrazuje odhady vektorů středních hodnot včetně jejich složek, tedy odhad průmerné délky erupce a odhad průměrného času čekání na erupci v jednotlivých složkách.
+
+```{r}
+#| label: tbl-sigma
+#| tbl-cap: "Kovarianční matice komponent (rozptyly a kovariancie)"
+#| echo: false
+
+t_sigma <- data.frame(
+  Sigma = c("\\(\\boldsymbol{\\hat{\\Sigma}_1}\\)", "\\(\\boldsymbol{\\hat{\\Sigma}_2}\\)"),
+  s11   = c(Sigma1[1,1], Sigma2[1,1]),
+  s12   = c(Sigma1[1,2], Sigma2[1,2]),
+  s22   = c(Sigma1[2,2], Sigma2[2,2])
+)
+
+kable(
+  t_sigma,
+  digits    = 4,
+  escape    = FALSE,
+  col.names = c("", "\\(\\hat{\\sigma}_{11}^2\\)", "\\(\\hat{\\sigma}_{12}\\)", "\\(\\hat{\\sigma}_{22}^2\\)")
+) |>
+  kable_styling(
+    full_width        = FALSE,
+    position          = "center",
+    bootstrap_options = "condensed",
+    font_size         = 10
+  )
+```
+
+@tbl-sigma zobrazuje odhady kovariančních matic (rozptyly a kovariance) jednotlivých složek smíšeného modelu.
+
+### Vykreslení směsi s vyznačenými středními hodnotami a variancí jednotlivých komponent
+
+```{r}
+#| label: fig-means-var
+#| fig-cap: "Vrstevnice hustoty směsi dvou dvourozměrných normálních rozdelení se středními hodnotami a směry variability jednotlivých komponent."
+#| fig-width: 10
+#| fig-height: 6
+#| echo: true
+
+plot(fitted_model, what = "density", data = NULL, xlim=c(1, 5.5), ylim = c(35, 95), main = "Stredné hodnoty a variance" )
+
+means_unround <- fitted_model$parameters$mean 
+points(t(means_unround),                 
+       pch = 4,               
+       col = "firebrick", 
+       cex = 2)   
+
+# smer variance prvni komponenty
+eigen1 <- eigen(sigmas[[1]])
+eig_val1 <- eigen1$values
+eig_vec1 <- eigen1$vectors
+
+# vyobrazime vektor delky dvou smerodatnych odchylek
+scale <- 2
+
+# smery variability * pocet smer. odchylek, ktere vykreslime
+direction1 <- scale * sqrt(eig_val1[1]) * eig_vec1[,1]
+direction2 <- scale * sqrt(eig_val1[2]) * eig_vec1[,2]
+
+mu1 <- means_unround[,1]
+
+# vykresleni sipek variability
+col1 <- rgb(0.3, 0.5, 0.8, 0.9) # svetle modra
+col2 <- rgb(0.8, 0.5, 0.3, 0.9) # svetle oranzova
+arrows(mu1[1], mu1[2], mu1[1] + direction1[1], mu1[2] + direction1[2], col = col1, length = 0.1, lwd = 2)
+arrows(mu1[1], mu1[2], mu1[1] - direction1[1], mu1[2] - direction1[2], col = col1, length = 0.1, lwd = 2)
+
+arrows(mu1[1], mu1[2], mu1[1] + direction2[1], mu1[2] + direction2[2], col = col2, length = 0.1, lwd = 2)
+arrows(mu1[1], mu1[2], mu1[1] - direction2[1], mu1[2] - direction2[2], col = col2, length = 0.1, lwd = 2)
+
+# smer variance druhe komponenty
+eigen2 <- eigen(sigmas[[2]])
+eig_val2 <- eigen2$values
+eig_vec2 <- eigen2$vectors
+
+direction1 <- scale * sqrt(eig_val2[1]) * eig_vec2[,1]
+direction2 <- scale * sqrt(eig_val2[2]) * eig_vec2[,2]
+
+mu2 <- means_unround[,2]
+
+# vykresleni sipek variability
+arrows(mu2[1], mu2[2], mu2[1] + direction1[1], mu2[2] + direction1[2], col = col1, length = 0.1, lwd = 2)
+arrows(mu2[1], mu2[2], mu2[1] - direction1[1], mu2[2] - direction1[2], col = col1, length = 0.1, lwd = 2)
+
+arrows(mu2[1], mu2[2], mu2[1] + direction2[1], mu2[2] + direction2[2], col = col2, length = 0.1, lwd = 2)
+arrows(mu2[1], mu2[2], mu2[1] - direction2[1], mu2[2] - direction2[2], col = col2, length = 0.1, lwd = 2)
+
+title(main = "Stredné hodnoty a variance")
+
+```
+
+@fig-means-var zobrazuje následující:
+
+- **Střední hodnota (červený křížek)**
+  + je střed elipsy a představuje typické/očekávané hodnoty dané komponenty (průměrná délka erupce a průměrná doba čekání).
+- **Vrstevnice hustoty (elipsy)**
+  + ukazují, jak jsou data rozložena kolem střední hodnoty.
+- **Kovariance (tvar elipsy)**
+  + naklonění elipsy značí nenulovou kovarianci.
+- **Směr variability (barevné šipky)**
+  + ukazují hlavní směry rozptylu (vlastní vektory kovarianční matice),
+  + délka šipky je rovna dvoum směrodatným odchylkám v daném směru,
+  + směrodatná odchylka v daném směru je dána odmocninou z vlastního čísla příslušné kovarianční matice.
+
+
+## (d)  Vykreslite bodový graf závislosti medzi dobou čakania na erupciu a dobou trvania erupcie a superponujte ho kontúrovým grafom:
+
+
+- 1) hustoty zmiešaného dvojrozmerného normálneho rozdelenia, ktorej parametre odhadnite pomocou funkcie `densityMclust()` z balíčka mclust;
+
+- 2) jadrového odhadu hustoty získaného pomocou funkcie `kde2d()`.
+
+Počet bodov $(x, y)$, v ktorých budete hustotu počítať, zvoľte $2500 (nx = ny = 50)$.
+
+```{r}
+#| label: fig-mixture-vs-kde
+#| fig-cap: "Porovnání hustoty smšsi dvou dvourozměrních normálních rozdelení a jadrového odhadu hustoty."
+#| fig-width: 10
+#| fig-height: 5
+#| echo: true
+
+col3 <- rgb(0.3, 0.5, 0.7, 0.8)
+col4 <- rgb(0.4, 0.6, 0.9, 0.5)
+
+n <- 50
+xlim=c(1, 5.5)
+ylim = c(38, 100)
+x <- seq(xlim[1], xlim[2], length.out = n)
+y <- seq(ylim[1], ylim[2], length.out = n) 
+
+
+M <- matrix(NA, nrow = n, ncol = n)
+for (i in 1:n) {
+  for (j in 1:n) {
+    M[i, j] <- Mixdnorm2(x[i], y[j], p[1], mu1, Sigma1, mu2, Sigma2)
+  }
+}
+
+Z <- MASS::kde2d(
+  faithful$eruptions,
+  faithful$waiting,
+  lim = c(xlim[1], xlim[2], ylim[1], ylim[2]),
+  n = n
+)
+
+k <- 10
+
+
+# --- Dva grafy vedle sebe ---
+par(mfrow = c(1, 2), mar = c(4, 4, 2, 1))
+
+# 1) Mixture density
+plot(
+  faithful$eruptions, faithful$waiting,
+  xlim = xlim,
+  ylim = ylim,
+  pch = 21, bg = col3,
+  col = col4,
+  cex = 0.9,
+  xlab = "Eruptions", ylab = "Waiting",
+  main = "(a) Hustota zmiešaného N2"
+)
+contour(x, y, M, drawlabels = TRUE, xlim = xlim, ylim = ylim,
+        levels = seq(0, max(M), length = k + 1),
+        add = TRUE, col = "grey20")
+
+# 2) Kernel density
+plot(
+  faithful$eruptions, faithful$waiting,
+  xlim = xlim,
+  ylim = ylim,
+  pch = 21, bg = col3,
+  col = col4,
+  cex = 0.9,
+  xlab = "Eruptions", ylab = "Waiting",
+  main = "(b) Jadrový odhad hustoty"
+)
+contour(Z, drawlabels = TRUE,
+  xlim = xlim,
+  ylim = ylim,
+        levels = seq(0, max(Z$z), length = k + 1),
+        add = TRUE, , col = "grey20")
+```
+
+
+### Ďalej pomocou funkcie `persp()` vykreslite 3D graf:
+
+- 1) hustoty zmiešaného dvojrozmerného normálneho rozdelenia;
+
+- 2) jadrového odhadu hustoty.
+
+Hustotu rozdeľte na $k = 12$ ntervalov, kde hodnoty v týchto intervaloch budú zodpovedať farbám `sequential_hcl(12)`. Vytvorte animáciu zobrazujúcu náhľad na oba 3D- diagramy.
+
+```{r, echo=TRUE}
+#| eval: true
+GenGraphs <- function(theta) {
+  k <- 12
+  cols <- sequential_hcl(k)
+  
+  Mfacetval <- M[-1, -1] + M[-1, -n] + M[-n, -1] + M[-n, -n]
+  Mfacetcol <- as.numeric(cut(Mfacetval, k))
+  Zfacetval <- -Z$z[-1, -1] + Z$z[-1, -n] + Z$z[-n, -1] + Z$z[-n, -n]
+  Zfacetcol <- as.numeric(cut(Zfacetval, k))
+  
+  par(mfrow = c(1,2), mar = c(3,3,3,3), pty = "s")
+  
+  persp(x, y, M,
+        theta = theta,
+        xlim = xlim,
+        ylim = ylim,
+        phi = 30,
+        col = cols[Mfacetcol],
+        xlab = "Eruptions", ylab = "Waiting", zlab = "Hustota",
+        main = "(a) Hustota zmiešaného N2",
+        d = 3,
+        ticktype = "detailed",
+        cex.axis = 0.8,  
+        cex.lab  = 1)
+  
+
+  persp(Z$x, Z$y, Z$z,
+        theta = theta, phi = 30,
+        xlim = xlim, ylim = ylim,
+        col = cols[Zfacetcol],
+        xlab = "Eruptions", ylab = "Waiting", zlab = "Hustota",
+        main = "(b) Jádrový odhad hustoty",
+        d = 3,
+        ticktype = "detailed",
+        cex.axis = 0.8,  
+        cex.lab  = 1)
+  
+}
+```
+
+```{r, echo=FALSE}
+#| fig-show: animate
+#| layout-ncol: 1
+#| fig-align: "center"
+#| fig-width: 10
+#| fig-height: 6
+#| label: fig-3d-graphs
+#| fig-cap: "3D zobrazení hustoty směsi dvou dvourozměrných normálních rozdělení a jádrového odhadu hustoty."
+
+
+pdf.options(encoding = "CP1250")
+
+theta_seq <- seq(-180, 175, by = 90)  # hodnoty theta od -180 do 180 po kroku 5
+
+for (i in 1:length(theta_seq)) {
+  GenGraphs(theta = theta_seq[i])
+}
+```
