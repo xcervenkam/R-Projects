@@ -1,0 +1,574 @@
+---
+format:
+  pdf:
+    geometry:
+      - top=19mm
+      - left=17mm
+      - right=17mm
+      - bottom=22mm
+    include-in-header: 
+      text: |
+       \usepackage[yyyymmdd,hhmmss]{datetime}
+       \renewcommand{\dateseparator}{-}
+       \usepackage{fancyhdr}
+       \usepackage{lastpage}
+       \usepackage{float}
+       \usepackage{booktabs}
+       \usepackage{soul}
+       \usepackage{makecell}
+       \usepackage{longtable}
+       \usepackage{colortbl}
+       \usepackage{fontspec}
+       \setmainfont{Calibri}
+       \newtheorem{priklad}{Príklad}
+       \usepackage{animate}
+       \usepackage{ragged2e}
+       \usepackage{caption}
+       \captionsetup{justification=raggedright,singlelinecheck=false}
+       \usepackage{booktabs}
+code-line-numbers: true
+code-block-bg: true
+code-block-border-left: "#E0EEEE"
+code-block-size: 8pt
+highlight-style: github
+fontsize: 11pt
+editor: source
+number-sections: false
+lang: cs
+fig-align: left
+---
+
+\begin{titlepage}
+\begin{center}
+
+\vspace*{1cm}
+
+\Huge 
+\textbf{M6120 Lineární statistické modely II}
+
+\vspace{0.5cm}
+
+\LARGE 
+Projekt/Domací úloha
+
+\vspace{1.5cm}
+
+Michal Červenka (518670)
+
+\vspace{1.5cm}
+
+\includegraphics[angle=0,width=0.35\textwidth]{ustavmatematikyastat-lg-cze-rgb}
+
+\vfill
+
+\vspace{0.8cm}
+
+\Large
+B-MAT Matematika
+
+Přírodovědecká fakulta, Masarykova Univerzita
+
+\today
+
+\end{center}
+\end{titlepage}
+
+\newpage
+
+\pagestyle{fancy} 
+\fancyhf{}
+\fancyhead[C]{\bfseries Projekt z predmetu M6120 Lineární statistické modely II}
+\fancyhead[R]{}
+\fancyfoot[L]{Michal Červenka, \today}
+\fancyfoot[R]{\includegraphics[angle=0,width=0.07\textwidth]{muni-lg-rgb}}
+
+\tableofcontents
+
+\newpage
+
+\pagestyle{fancy} 
+\fancyhf{}
+\fancyhead[L]{\bfseries Projekt z predmetu M6120 Lineární statistické modely II}
+\fancyhead[R]{\thepage\ of \pageref{LastPage}}
+\fancyfoot[L]{Michal Červenka, \today}
+\fancyfoot[R]{\includegraphics[angle=0,width=0.07\textwidth]{muni-lg-rgb}}
+
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0.5pt}
+
+\setcounter{page}{1}
+
+```{=html}
+<style type="text/css">
+caption, .table-caption {
+  text-align: left;
+}
+</style>
+```
+
+```{r}
+#| echo: FALSE
+#| warning: FALSE
+#| label: priklad_00
+# nacitanie kniznic
+library(WRS2)
+library(knitr)
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(kableExtra)
+library(extrafont)
+```
+
+# Řešení příkladu 1
+Uvažujme lineární model ve tvaru
+$$
+Y_i = \beta_0 + \beta_1 x_i + \beta_2 x_i^2 + \beta_3 \mathbb{I}_M\{i\} + \epsilon_i, \quad \epsilon_i \sim N(0, \sigma^2)
+$$
+pro $i = 1, 2, \ldots, n$, kde $\mathbb{I}_M\{i\}$ označuje indikátorovou funkci nějaké pevně dané množiny $M$, tj.
+$$
+\mathbb{I}_M\{i\} = 
+\begin{cases}
+1 \quad i \in M, \\
+0 \quad i \notin M.
+\end{cases}
+$$
+Podle Scheffého věty platí
+$$
+\operatorname{Pr}\left(\left\{\mathbf{b}^{\top}(\mathbf{A} \hat{\boldsymbol{\beta}}-\mathbf{A} \boldsymbol{\beta})\right\}^2 \leq m F_{1-\alpha}(m, n-p) \hat{\sigma}^2 \mathbf{b}^{\top} \mathbf{A}\left(\mathbf{X}^{\top} \mathbf{X}\right)^{-1} \mathbf{A}^{\top} \mathbf{b}\right)=1-\alpha
+$$
+
+pro všechna $\mathbf{b} \in \mathbb{R}^m$, kde $\mathbf{A} \in \mathbb{R}^{m \times p}$. V případě našeho modelu je $m = 3, \; p = 4$ a $\mathbf{b} = (1, x, x^2)^T$. Odvození tvaru pásu spolehlivosti rozdělíme do dvou častí, a to na případ, kdy $i \in M$ a kdy $i \notin M$. V závislosti na této situaci se bude měnit matice $\mathbf{A}$.
+
+Začneme se situací, kdy $i \in M$. V tomto případě je matice $\mathbf{A}$ ve tvaru
+$$
+\mathbf{A} = \begin{pmatrix}
+1 & 0 & 0 & 1 \\
+0 & 1 & 0 & 0 \\
+0 & 0 & 1 & 0
+\end{pmatrix}
+.
+$$
+Nyní dosadíme do Scheffého věty a začneme odvozovat pás spolehlivosti. Po dosazení dostáváme
+$$
+\begin{split}
+\operatorname{Pr} ( \{\hat{\beta_0} + \hat{\beta_3} + \hat{\beta_1}x + \hat{\beta_2} x^2 - (\beta_0 + \beta_3 + \beta_1 x +  \beta_2 x^2)\}^2 \leq \\ 
+3 \cdot F_{1 - \alpha}(3, n-4) \hat{\sigma}^2(1, x, x^2, 1)(X^TX)^{-1}(1, x, x^2, 1)^T) = 1 - \alpha.
+\end{split}
+$$
+Odmocníme výraz uvnitř $\operatorname{Pr}$, čímž dostaneme
+$$
+\begin{split}
+\operatorname{Pr} (\hat{\beta_0} + \hat{\beta_3} + \hat{\beta_1}x + \hat{\beta_2} x^2 - (\beta_0 + \beta_3 + \beta_1 x +  \beta_2 x^2) \leq \\ 
+\pm \sqrt{3 \cdot F_{1 - \alpha}(3, n-4) \hat{\sigma}^2(1, x, x^2, 1)(X^TX)^{-1}(1, x, x^2, 1)^T} ) = 1 - \alpha.
+\end{split}
+$$
+Označme $y = \beta_0 + \beta_3 + \beta_1 x +  \beta_2 x^2$. Tvar pásu spolehlivosti odvozeného z Scheffého věty pro situaci $i \in M$ s pravděpodobností pokrytí $100 \cdot (1 - \alpha) \, \%$ je 
+$$
+\begin{aligned}
+y &\geq \hat{\beta_0} + \hat{\beta_3} + \hat{\beta_1}x + \hat{\beta_2} x^2 - \sqrt{3 \cdot F_{1 - \alpha}(3, n-4) \hat{\sigma}^2(1, x, x^2, 1)(X^TX)^{-1}(1, x, x^2, 1)^T},   \\
+y &\leq \hat{\beta_0} + \hat{\beta_3} + \hat{\beta_1}x + \hat{\beta_2} x^2 + \sqrt{3 \cdot F_{1 - \alpha}(3, n-4) \hat{\sigma}^2(1, x, x^2, 1)(X^TX)^{-1}(1, x, x^2, 1)^T}.
+\end{aligned}
+$$
+Situaci, kdy $i \in M$ máme vyřešenou. Zaměřmě se nyní na situaci, kdy $i \notin M$. Matice $\mathbf{A}$ bude v tomto případě v následujícím tvaru
+$$
+\mathbf{A} = 
+\begin{pmatrix}
+1 & 0 & 0 & 0 \\
+0 & 1 & 0 & 0 \\
+0 & 0 & 1 & 0 
+\end{pmatrix}
+.
+$$
+Odvození pásu spolehlivosti pro tuto situaci provedeme analogicky jako v předchozím případě. Prvně dosaďme do Scheffého věty, čímž dostaneme
+$$
+\begin{split}
+\operatorname{Pr} ( \{\hat{\beta_0} + \hat{\beta_1}x + \hat{\beta_2} x^2 - (\beta_0  + \beta_1 x +  \beta_2 x^2)\}^2 \leq \\ 
+3 \cdot F_{1 - \alpha}(3, n-4) \hat{\sigma}^2(1, x, x^2, 0)(X^TX)^{-1}(1, x, x^2, 0)^T) = 1 - \alpha.
+\end{split}
+$$
+Odmocníme výraz uvnitř $\operatorname{Pr}$, čímž dostaneme
+$$
+\begin{split}
+\operatorname{Pr} (\hat{\beta_0}  + \hat{\beta_1}x + \hat{\beta_2} x^2 - (\beta_0  + \beta_1 x +  \beta_2 x^2) \leq \\ 
+\pm \sqrt{3 \cdot F_{1 - \alpha}(3, n-4) \hat{\sigma}^2(1, x, x^2, 0)(X^TX)^{-1}(1, x, x^2, 0)^T} ) = 1 - \alpha.
+\end{split}
+$$
+Označme $y = \beta_0 + \beta_1 x +  \beta_2 x^2$. Tvar pásu spolehlehlivosti odvozeného z Scheffého věty pro situaci $i \notin M$ s pravděpodobností pokrytí $100 \cdot (1 - \alpha) \, \%$ je
+$$
+\begin{aligned}
+y &\geq \hat{\beta_0}  + \hat{\beta_1}x + \hat{\beta_2} x^2 - \sqrt{3 \cdot F_{1 - \alpha}(3, n-4) \hat{\sigma}^2(1, x, x^2, 0)(X^TX)^{-1}(1, x, x^2, 0)^T},   \\
+y &\leq \hat{\beta_0} + \hat{\beta_1}x + \hat{\beta_2} x^2 + \sqrt{3 \cdot F_{1 - \alpha}(3, n-4) \hat{\sigma}^2(1, x, x^2, 0)(X^TX)^{-1}(1, x, x^2, 0)^T}.
+\end{aligned}
+$$
+\newpage
+
+# Řešení příkladu 2
+
+
+``` {r}
+#| echo: false
+#| eval: true
+#| label: nastaveni_dat_pr2
+#| warning: false
+load("C:/Users/cerve/Desktop/B-FINMAT/6. SEMESTR/Lineární statistické modely 2/Cvičení/Data/Uspesnost_studentu.Rda")
+
+```
+
+
+(a) Najděte vhodný lineární regresní model pro popis závislosti úspěšnosti studentů na délce přípravy
+a zařazení skupiny. V následujících bodech pracujte s tímto modelem
+
+Budeme uvažovat dva modely. Jeden z nich bude obsahovat interkaci a druhý nikoliv a následně rozhodneme, který je více vhodný. Podívejme se na jednotlivé modely.
+
+``` {r}
+#| echo: true
+#| eval: true
+#| label: definovani_modelu_pr2
+# Model bez interakce
+mod1 <- lm(data = data, uspesnost ~ hodiny + skupina)
+# Model s interkací
+mod2 <- lm(data = data, uspesnost ~ hodiny + skupina + skupina:hodiny)
+```
+Nyní se podívejme podrobněji na model bez interkace.
+``` {r}
+#| echo: false
+#| eval: true
+#| label: summary_mod1
+summary(mod1)
+```
+Můžeme si povšimnout, že všechny koeficienty modelu bez interkace jsou statisticky významné na hladině významnosti $\alpha = 0.05$, a tedy tento model vypadá slibně. Zaměřmě se nyní na model s interkací.
+``` {r}
+#| echo: false
+#| eval: true
+#| label: summary_mod2
+summary(mod2)
+```
+V modelu s interkací je koeficent u interakce proměnné skupina a hodiny statisticky nevýznamný na hladině významnosti $\alpha = 0.05$, a proto volíme jednodušší model, a tedy ten bez interkace, v našem značení mod1. Můžeme si povšimnout, že oba modely mají adjustované $R^2$ blízké k hodnotě 0.96, a tedy jsme našli velmi vhodné modely, jelikož vysvětlují velkou část variability našich dat.
+
+(b) Pro každou skupinu zvlášť sestrojte konfidenční pás spolehlivosti s pravděpodobností pokrytí
+95 %
+``` {r}
+#| echo: true 
+#| eval: true
+#| label: pr2_B
+xx <- seq(0, 20, by = 0.1)
+# Matice A pro skupinu A
+A <- rbind(c(1, 0, 0), c(0, 1, 0))
+# Odhady koeficientů modelu bez interakce
+beta_hat <- mod1$coefficients
+# Hodnoty parametrů
+m  <- 2
+p <- 3
+n <- length(data$hodiny)
+# Odhad kovarianční matice modelu bez interakce
+vcov_mod1 <- vcov(mod1)
+# Příslušní F-kvantil
+F_kvantil <- qf(0.95, m, n-p)
+
+# Výpočet dolní a horní hranice pásu spolehlivosti pro skupinu A
+# Skupina A - dolní hranice pásu spolehlivosti
+pas_skupina_A_lower <- numeric(length(xx))
+for (i in seq_along(xx)) {
+  b <- c(1, xx[i])  
+  pas_skupina_A_lower[i] <- beta_hat[1] + beta_hat[2] * xx[i] - 
+    sqrt(m * F_kvantil * t(b) %*% A %*% vcov_mod1 %*% t(A) %*% b)
+}
+# Skupina A - horní hranice pásu spolehlivosti
+pas_skupina_A_upper <- numeric(length(xx))
+for (i in seq_along(xx)) {
+  b <- c(1, xx[i])  
+  pas_skupina_A_upper[i] <- beta_hat[1] + beta_hat[2] * xx[i] + 
+    sqrt(m * F_kvantil * t(b) %*% A %*% vcov_mod1 %*% t(A) %*% b)
+}
+
+# Výpočet dolní a horní hranice pásu spolehlivosti pro skupinu B
+# Změna matice pro skupinu B
+A <- rbind(c(1, 0, 1), c(0, 1, 0))
+
+# Skupina B - dolní hranice pásu spolehlivosti
+pas_skupina_B_lower <- numeric(length(xx))
+for (i in seq_along(xx)) {
+  b <- c(1, xx[i])  
+  pas_skupina_B_lower[i] <- (beta_hat[1] + beta_hat[3]) + beta_hat[2] * xx[i] - 
+    sqrt(m * F_kvantil * t(b) %*% A %*% vcov_mod1 %*% t(A) %*% b)
+}
+# Skupina B - horní hranice pásu spolehlivosti
+pas_skupina_B_upper <- numeric(length(xx))
+for (i in seq_along(xx)) {
+  b <- c(1, xx[i])  
+  pas_skupina_B_upper[i] <- (beta_hat[1] + beta_hat[3]) + beta_hat[2] * xx[i] + 
+    sqrt(m * F_kvantil * t(b) %*% A %*% vcov_mod1 %*% t(A) %*% b)
+} 
+
+```
+
+(c) Odhadněte (bodově i intervalově) průměrnou úspěšnost studenta skupiny B, který se učil půl
+hodiny
+
+``` {r}
+#| echo: false
+#| eval: true
+#| label: pr2_C
+x <- c(1, 0.5, 1)
+sigma_sq_hat <- (summary(mod1)$sigma)^2
+vcov_mod1 <- vcov(mod1)
+beta_hat <- mod1$coefficients
+X <- model.matrix(mod1)
+n <- length(data$hodiny)
+p <- 3
+alfa <- 0.05
+t_kvantil <- qt(1 - alfa / 2, n-p) 
+fit <- t(x) %*% beta_hat
+IS_lower <- t(x) %*% beta_hat - t_kvantil * sqrt(sigma_sq_hat * t(x) %*% solve(t(X) %*% X) %*% x)
+IS_upper <- t(x) %*% beta_hat + t_kvantil * sqrt(sigma_sq_hat * t(x) %*% solve(t(X) %*% X) %*% x)
+IS <-  data.frame(xx = 0.5, fit, dolni_hranice = IS_lower, horni_hranice = IS_upper)
+IS[c("fit", "dolni_hranice", "horni_hranice")]
+```
+
+(d) Vypočtěte simultánní intervalové odhad střední hodnoty úspěšnosti pro studenty skupiny A,
+kteří se učili 5, 10 a 15 hodin. Zvolte hladinu významnosti α = 0,05 a využijte Bonferroniho
+adjustaci
+
+``` {r}
+#| echo: false
+#| eval: true
+#| label: definovani_promennych_a_vypocty_pr2_D
+pdf.options(encoding = "CP1250")
+# Hladina významnosti
+alpha <- 0.05
+# Hodnota h
+h <- 3
+# Adjustovaná hladina významnosti
+alpha_adj <- alpha / (2 * h)
+# Počet parametrů v modeli
+p <- 3
+# Odhady koeficientů v mod1
+beta_hat <- mod1$coefficients
+# Vektory a pro jednotlivé situace
+aa1 <- c(1, 5, 0)
+aa2 <- c(1, 10, 0)
+aa3 <- c(1, 15, 0)
+# Velikost datové souboru
+n <- length(data$hodiny)
+# Kovariacní matice mod1
+vcov_mod1 <- vcov(mod1) 
+# t-kvantil pro výpočet IS
+t_kvantil <- qt(1 - alpha_adj, df = n - p)
+# 1. IS
+IS_lower_1 <- t(aa1) %*% beta_hat - t_kvantil * sqrt(t(aa1) %*% vcov_mod1 %*% aa1)
+IS_upper_1 <- t(aa1) %*% beta_hat + t_kvantil * sqrt(t(aa1) %*% vcov_mod1 %*% aa1)
+IS_1 <- c(IS_lower_1, IS_upper_1)
+# 2. IS
+IS_lower_2 <- t(aa2) %*% beta_hat - t_kvantil * sqrt(t(aa2) %*% vcov_mod1 %*% aa2)
+IS_upper_2 <- t(aa2) %*% beta_hat + t_kvantil * sqrt(t(aa2) %*% vcov_mod1 %*% aa2)
+IS_2 <- c(IS_lower_2, IS_upper_2)
+# 3. IS
+IS_lower_3 <- t(aa3) %*% beta_hat - t_kvantil * sqrt(t(aa3) %*% vcov_mod1 %*% aa3)
+IS_upper_3 <- t(aa3) %*% beta_hat + t_kvantil * sqrt(t(aa3) %*% vcov_mod1 %*% aa3)
+IS_3 <- c(IS_lower_3, IS_upper_3)
+
+```
+
+``` {r}
+# Hodnoty hodiny = 5, skupina = A
+IS_1
+# Hodnoty hodiny = 10, skupina = A
+IS_2
+# Hodnoty hodiny = 15, skupina = A
+IS_3
+
+```
+\newpage 
+(e) Zakreslete výsledky z předchozích bodů do jednoho obrázku. Tj. vykreslete bodový graf pozorování, přidejte křivky vašeho modelu, zvýrazněte konfidenční pásy spolehlivosti a požadované
+intervalové odhady i predikce.
+``` {r}
+#| eval: true
+#| echo: false
+#| label: priprava_dat_pro_grafy_pr2_E
+data_CB_A <- data.frame(xx, pas_skupina_A_lower, pas_skupina_A_upper)
+data_CB_B <- data.frame(xx, pas_skupina_B_lower, pas_skupina_B_upper)
+IS_bonf_lower <- c(IS_lower_1, IS_lower_2, IS_lower_3)
+IS_bonf_upper <- c(IS_upper_1, IS_upper_2, IS_upper_3)
+bonfer <- data.frame(xx = c(5, 10, 15), IS_bonf_lower, IS_bonf_upper)
+
+```
+
+``` {r, fig.cap="Regresní přímky modelu mod1 pro obě skupiny"}
+#| echo: FALSE
+#| warning: FALSE
+#| label: graf1
+#| fig-asp: 1
+#| layout-ncol: 1
+#| fig-height: 3.7
+#| fig-width: 5.5
+#| fig-align: "center"
+#| out-width: "33%"
+#| fig-pos: "HT"
+data <- data %>%
+  rename(Skupina = skupina)
+pdf.options(encoding = "CP1250")
+# layout na jeden obrázok
+par(mar = c(6.8, 5, 1, 1))
+ggplot(data) +
+  geom_point(aes(y = uspesnost, x = hodiny, shape = Skupina)) +
+  scale_colour_manual(values = c("Skupina A" = "darkgreen", "Skupina B" = "darkred")) +
+  stat_function(fun = function(x) beta_hat[1] + beta_hat[2] * x, aes(col = "Model skupina A")) +
+  stat_function(fun = function(x) beta_hat[1] + beta_hat[3] + beta_hat[2] * x, aes(col = "Model skupina B")) +
+  geom_ribbon(data = data_CB_A, aes(ymin = pas_skupina_A_lower, ymax = pas_skupina_A_upper, x = xx, fill = "Skupina A"), alpha = 0.4) +
+  geom_ribbon(data = data_CB_B, aes(ymin = pas_skupina_B_lower, ymax = pas_skupina_B_upper, x = xx, fill = "Skupina B"), alpha = 0.4) +
+  geom_errorbar(data = bonfer, aes(ymin = IS_bonf_lower, ymax = IS_bonf_upper, x = xx, col = "Bonferroni IS z (d)"), width = .35) +
+  geom_errorbar(data = IS, aes(ymin = dolni_hranice, ymax = horni_hranice, x = xx, col = "Intervalový odhad z (c)"), width = .35) +
+  geom_point(data = IS, aes(x = xx, y = fit, col = "Bodový odhad z (c)"), size = 1) +
+  scale_fill_manual(name = "Konfidenční pásy", values = c("Skupina A" = "green", "Skupina B" = "red")) +
+  scale_colour_manual(name = "Modely a odhady", values = c("Model skupina A" = "darkgreen", "Model skupina B" = "darkred", "Bonferroni IS z (d)" = "purple", "Intervalový odhad z (c)" = "yellow", "Bodový odhad z (c)" = "white")) +
+  theme(legend.position = "right")
+```
+\newpage
+
+# Řešení příkladu 3
+
+
+(a) Vykreslete krabicové diagramy popisující úbytek hmotnosti v závislosti na typu diety a pohlaví.
+Vytvořte také krabicové diagramy v závislosti pouze na typu diety. Všechny diagramy vložte
+vedle sebe do jednoho obrázku, abyste je mohli porovnat mezi sebou. Do „krabic“ přidejte zářezy, nastavte, aby jejich šířka odpovídala proporčně rozsahům a dokreslete do nich aritmetické
+průměry jako červené body
+``` {r, fig.cap="Boxploty úbytku váhy pro jednotlivé typy diet a pohlaví"}
+#| echo: FALSE
+#| warning: FALSE
+#| fig-asp: 1
+#| layout-ncol: 1
+#| fig-height: 4
+#| fig-width: 4
+#| fig-align: "center"
+#| out-width: "33%"
+#| fig-pos: "HT"
+pdf.options(encoding = "CP1250")
+# layout na jeden obrázok
+par(mar = c(6.8, 5, 1, 1))
+ggplot(data = diet, aes(x = diet.type, y = weight.loss, fill = gender)) +
+  geom_boxplot(notch = TRUE, staplewidth = 0.5, varwidth = TRUE) +
+  stat_summary(fun = mean, col = "red", geom = "point", size = 1, position = position_dodge(width = 0.75))
+
+``` 
+(b) Modelujte závislost střední hodnoty úbytku hmotnosti na typu diety a pohlaví. Vyzkoušejte různé
+varianty složitosti modelu: (1) model se vzájemnou interakcí obou faktorů, (2) model bez interakce a (3) model bez vlivu proměnné gender. Vyberte ten nejvhodnější z nich a své rozhodnutí
+zdůvodněte a podpořte příslušným výstupem.
+
+Prvně sestavme požadované modely (1) až (3).
+
+``` {r}
+#| echo: true
+#| eval: true
+#| label: definovani_modelu_pr3
+mod1 <- lm(data = diet, weight.loss ~ gender + diet.type + diet.type:gender)
+mod2 <- lm(data = diet, weight.loss ~ gender + diet.type)
+mod3 <- lm(data = diet, weight.loss ~ diet.type)
+``` 
+Nyní provedeme porovnání modelů, tj. budeme zjištovať, zda se od sebe modely statisticky významně liší na hladině významnosti $\alpha = 0.05$.
+``` {r}
+#| echo: true
+#| eval: true
+#| label: porovnani_mod1_a_mod2
+anova(mod1, mod2)
+```
+Na základě výstupu vidíme, že model s oběma kategoriemi a jejich vzájemnou interakcí se liší od modelu s oběma kategoriemi, ale bez interakce. Vzhledem k tomu, že mod3 je podmodelem modelu mod2, tak zvolíme nejsložitější model, a tedy model mod3 s oběma kategoriemi "gender" a "diet.type" a jejich vzájemnou interakcí. Nezanedbatelnost interakce mezi typem diety a pohlavím nám již naznačily boxploty v (a). Můžeme si povšimnout, že úbytek váhy pro jednotlivé diety se liší v závislosti na pohlaví.
+
+(c) Pro vámi vybraný model model z (b) vypište do tabulky odhady středních hodnot úbytku hmotnosti pro jednotlivé skupiny (tj. v případě modelu (1) skupiny symbolicky zapíšeme jako f.A, f.B,
+f.C, m.A, m.B a m.C, ale např. v případě modelu (3) uvažujme pouze skupiny A, B a C).
+
+```{r results='asis', echo=FALSE}
+# Seznam unikátních kombinací diet.type a gender
+combinations <- expand.grid(diet.type = unique(diet$diet.type), gender = unique(diet$gender))
+
+# Predikce středních hodnot úbytku hmotnosti pro každou kombinaci
+predictions <- predict(mod1, newdata = combinations, interval = "confidence")
+combinations$mean_weight_loss <- predictions[, "fit"]
+
+# Vytvoření symbolického označení skupin
+combinations$symbolic_group <- with(combinations, paste0(
+  ifelse(gender == "Female", "f", "m"), ".", diet.type
+))
+
+# Výběr relevantních sloupců pro tabulku
+result_table <- combinations[, c("symbolic_group", "mean_weight_loss")]
+colnames(result_table) <- c("Skupina", "Odhad střední hodnoty")
+
+# Vytvoření LaTeX tabulky s celkovým zarovnáním doleva
+latex_table <- result_table %>%
+  kable(format = "latex", booktabs = TRUE, caption = "Odhady středních hodnot úbytku hmotnosti pro jednotlivé skupiny") %>%
+  kable_styling(latex_options = c("striped", "hold_position"), full_width = FALSE)
+
+cat(latex_table)
+
+```
+
+(d) Pro model (1) z (b) vykreslete do grafu zvlášť pro ženy (červená lomená čára) a zvlášť pro muže
+(modrá lomená čára) odhadnuté střední hodnoty úbytku hmotnosti pro všechny druhy diet. Na
+ose x budou úrovně faktoru diet.type a na ose y úbytek hmotnosti. Uveďte také, jak získáte
+jednotlivé odhady středních hodnot pomocí příslušných koeficientů modelu.
+
+Prvně se podívejme, jak vypočítat jednotlivé odhady úbytku hmotnosti pro všechny diety a jednotlivá pohlaví. Pro přehlednost se podívejme na summary přislušného modelu, respektive na odhady jeho koeficientů.
+```{r}
+#| eval: true
+#| echo: false
+#| label: summary_pro_pr3_d
+
+summary(mod1)$coefficients
+```
+\newpage
+Když už známe jednotlivé odhady koeficientů, respektive jejich pořadí, tak provedeme požadované výpočty.
+``` {r}
+#| eval: true
+#| echo: true
+#| label: vypocet_odhadu_strednich_hodnot_pr3_D
+# Odhady koeficientů
+beta_hat <- mod1$coefficients
+weight_loss_F_A <- beta_hat[1] # Žena s dietou A
+weight_loss_F_B <- beta_hat[1] + beta_hat[3] # Žena s dietou B
+weight_loss_F_C <- beta_hat[1] + beta_hat[4] # Žena s dietou C
+weight_loss_M_A <- beta_hat[1] + beta_hat[2] # Muž s dietou A
+weight_loss_M_B <- beta_hat[1] + beta_hat[2] + beta_hat[3] + beta_hat[5] # Muž s dietou B
+weight_loss_M_C <- beta_hat[1] + beta_hat[2] + beta_hat[4] + beta_hat[6] # Muž s dietou C
+```
+
+``` {r}
+#| echo: false
+#| eval: true
+#| label: Vytvoření datového rámce pro graf
+data <- data.frame(
+  diet.type = factor(c("A", "B", "C", "A", "B", "C")),  # Typy diet
+  gender = factor(c("F", "F", "F", "M", "M", "M")),     # Pohlaví
+  weight_loss = c(
+    weight_loss_F_A,    # Žena s dietou A
+    weight_loss_F_B,    # Žena s dietou B
+    weight_loss_F_C,    # Žena s dietou C
+    weight_loss_M_A,    # Muž s dietou A
+    weight_loss_M_B,    # Muž s dietou B
+    weight_loss_M_C     # Muž s dietou C
+  )
+)
+```
+Nyní budeme výpočty vizualizovat pomocí lomenných čar.
+
+```{r,  fig.cap="Lomenné čáry odhadnutých úbytků váhy v závislosti na pohlaví a typu diety"}
+#| echo: FALSE
+#| warning: FALSE
+#| label: graf3
+#| fig-asp: 1
+#| layout-ncol: 1
+#| fig-height: 4
+#| fig-width: 4
+#| fig-align: "center"
+#| out-width: "33%"
+#| fig-pos: "HT"
+pdf.options(encoding = "CP1250")
+# layout na jeden obrázok
+par(mar = c(6.8, 5, 1, 1))
+ggplot(data, aes(x = diet.type, y = weight_loss, color = gender, group = gender)) +
+  geom_line() +  
+  geom_point(size = 3)
+```
+
+
+
